@@ -268,31 +268,21 @@ Lazy imports are represented internally by a "lazy import" object. When a lazy
 import occurs (say ``import foo`` or ``from foo import bar``), the key ``"foo"``
 or ``"bar"`` is immediately added to the module namespace dictionary, but with
 its value set to an internal-only "lazy import" object that preserves all the
-necessary metadata to execute the import later. The ``DictKeysKind`` for the
-module namespace dictionary is updated from e.g. ``DICT_KEYS_UNICODE`` to
-``DICT_KEYS_UNICODE_LAZY`` to signal that this particular dictionary may contain
-lazy import objects.
+necessary metadata to execute the import later. A new boolean flag in
+``PyDictKeysObject`` (``dk_lazy_imports``) is set to signal that this particular
+dictionary may contain lazy import objects.
 
-(In case someone adds a non-unicode key to a module namespace dictionary also
-containing lazy import objects, e.g. via ``globals()[42] = "foo"``, there is
-also ``DICT_KEYS_GENERAL_LAZY``, but in most cases this is not needed.)
-
-Anytime a key is looked up in a dictionary with ``DICT_KEYS_UNICODE_LAZY`` or
-``DICT_KEYS_GENERAL_LAZY``, the value is checked to see if it is a lazy import
-object. If so, the import is immediately executed, the lazy import object is
-replaced in the dictionary by the actual imported value, and the imported value
-is returned from the lookup.
+Anytime a key is looked up in a dictionary, as to extract any of its values, the
+value is checked to see if it is a lazy import object. If so, the lazy object is
+immediately resolved, the relevant imported modules executed, the lazy import
+object is replaced in the dictionary (whenever is possible) by the actual
+imported value, and the resolved value is returned from the lookup function.
 
 Because this is all handled internally by the dictionary implementation, lazy
 import objects can never escape from the module namespace to become visible to
 Python code; they are always resolved at their first reference.
 
-Since only (some) module namespace dictionaries will ever have
-``DICT_KEYS_*_LAZY`` set, the (minimal) extra lookup overhead to check for lazy
-import objects is only paid by those dictionaries that need it; other
-dictionaries have no added overhead.
-
-No stub or dummy objects are ever visible to Python code or placed in
+No stub, dummy or thunk objects are ever visible to Python code or placed in
 ``sys.modules``. Other than the delayed import, the implementation is
 transparent.
 
@@ -312,21 +302,28 @@ import object. When ``modb.foo`` is later referenced, it will also try to
 Python, and at this point will replace the lazy import object at
 ``modb.__dict__["foo"]`` with the actual module ``foo``.
 
-There is one case in which a lazy import object can escape one dictionary (but
-only into another dictionary) without being resolved. To preserve the
-performance of bulk-copy operations like ``dict.update()`` and ``dict.copy()``,
-they do not check for or resolve lazy import objects. However, if the source
-dict has a ``*_LAZY`` lookup kind set that indicates it might contain lazy
-objects, that lookup kind will be passed on to the updated/copied dictionary.
-This still ensures that the lazy import object can't escape into Python code
-without being resolved.
+There are two cases in which a lazy import object can "escape" one dictionary:
 
-Other "bulk" dictionary lookup methods (such as ``dict.items()``,
-``dict.values()``, etc) will resolve all lazy import objects in the dictionary.
-Since it is uncommon for any of these to be used on a module namespace
-dictionary, the priority here is simplicity of implementation and minimizing the
-overhead on normal non-lazy dictionaries (just one check to see if the
-dictionary has a ``*_LAZY`` lookup kind).
+* Into another dictionary: to preserve the performance of bulk-copy operations
+  like ``dict.update()`` and ``dict.copy()``, they do not check for or resolve
+  lazy import objects. However, if the source dict has the ``dk_lazy_imports``
+  flag set that indicates it might contain lazy objects, that flag will be
+  passed on to the updated/copied dictionary. This still ensures that the lazy
+  import object can't escape into Python code without being resolved.
+
+* Through the garbage collector: lazy imported objects are still Python objects
+  and live within the garbage collector; as such, they can be collected and seen
+  by means of using ``gc.collect()`` and ``gc.get_objects()``. Lazy objects are,
+  however, self contained and should pose no danger if extracted from the
+  garbage collector in this way.
+
+Other "bulk" dictionary lookup methods involving values (such as ``dict.items()``,
+``dict.values()``, ``PyDict_Next()`` etc.) will attempt to resolve *all* lazy
+import objects in the dictionary prior starting the lookup. Since only (some)
+module namespace dictionaries will ever have ``dk_lazy_imports`` set, the extra
+overhead of resolving all lazy import objects inside a dictionary is only paid
+by those dictionaries that need it. Minimizing the overhead on normal non-lazy
+dictionaries is the sole purpose of the ``dk_lazy_imports`` flag.
 
 The eagerness of imports within ``try`` / ``except`` / ``with`` blocks or within
 class or function bodies is handled in the compiler via a new
