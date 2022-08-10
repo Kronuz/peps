@@ -131,9 +131,13 @@ dictionaries in general.
 Specification
 =============
 
-Lazy imports are opt-in, and globally enabled either via a new ``-L`` flag to
-the Python interpreter or via a call to a new ``importlib.set_lazy_imports()``
-function, which makes all imports after the call lazy.
+Lazy imports are opt-in, and they can be:
+
+* Globally enabled, either via a new ``-L`` flag to the Python interpreter or
+  via a call to a new ``importlib.set_lazy_imports()`` function, which makes
+  *all* new imports after the call immediately lazy.
+
+* In module enabled, via ``importlib.enable_lazy_imports_in_module()``.
 
 When enabled, the loading and execution of all (and only) top-level imports is
 deferred until the imported name is first used. This could happen immediately
@@ -390,7 +394,7 @@ In this example, if lazy imports have been enabled the first call to
 ``is_lazy_import`` will return ``True`` and the second will return ``False``.
 
 
-Per-module opt out
+Per-module opt-out
 ------------------
 
 Due to the backwards compatibility issues mentioned below, it may be necessary
@@ -463,6 +467,36 @@ This opt-out system is designed to maintain the possibility of local reasoning
 about the laziness of an import. You only need to see the code of one module,
 and the ``excluding`` argument to ``set_lazy_imports``, if any, to know whether
 a given import will be eager or lazy.
+
+
+Per-module opt-in
+-----------------
+
+Experience with the reference implementation suggests that the most practical
+adoption path for lazy imports is for a specific deployed application to opt-in
+globally, observe whether anything breaks, and opt-out specific modules as
+needed.
+
+It is less practical to achieve robust and significant startup-time or
+memory-use wins by piecemeal application of lazy imports. Generally it would
+require blanket application of the ``__future__`` import to most of the
+codebase, as well as to third-party dependencies (which may be hard or
+impossible.)
+
+However, under some use cases it may be convenient to have a way to enable lazy
+imports whether the application/end user requests it or not. This too can be
+easily achieved::
+
+    from importlib import enable_lazy_imports_in_module
+    enable_lazy_imports_in_module()
+
+After calling ``enable_lazy_imports_in_module()``, every import in the module
+would be lazy. This could be very helpful for libraries importing subpackages
+into their main namespace by default, as a mean of exporting them without
+suffering from the penalties and slowdowns of actually doing the import. This
+would be very helpful to allow exposing symbols for interactive exploration and
+teaching purposes, allowing making all the subpackages available there from the
+start without any additional cost.
 
 
 Testing
@@ -661,17 +695,11 @@ and will be linked here soon. (TODO link.)
 Rejected Ideas
 ==============
 
-Per-module opt-in
------------------
+Per-module opt-in using future imports
+--------------------------------------
 
-A per-module opt-in using e.g. ``from __future__ import lazy_imports`` has a
-couple of disadvantages:
-
-* It is less practical to achieve robust and significant startup-time or
-  memory-use wins by piecemeal application of lazy imports. Generally it would
-  require blanket application of the ``__future__`` import to most of the
-  codebase, as well as to third-party dependencies (which may be hard or
-  impossible.)
+A per-module opt-in using future imports (i.e.
+``from __future__ import lazy_imports`` has one big disadvantage:
 
 * ``__future__`` imports are not feature flags, they are for transition to
   behaviors which will become default in the future. It is not clear if lazy
@@ -679,11 +707,6 @@ couple of disadvantages:
   promise this with a ``__future__`` import. Thus, a per-module opt-in would
   require a new ``from __optional_features__ import lazy_imports`` or similar
   mechanism.
-
-Experience with the reference implementation suggests that the most practical
-adoption path for lazy imports is for a specific deployed application to opt-in
-globally, observe whether anything breaks, and opt-out specific modules as
-needed.
 
 
 Explicit syntax for individual lazy imports
@@ -784,8 +807,9 @@ commonly used at module top level, which is where lazy imports applies.
 Deep eager-imports override
 ---------------------------
 
-The proposed ``importlib.eager_imports()`` context manager and
-``importlib.set_lazy_imports(excluding=...)`` override both have shallow
+The proposed ``importlib.enable_lazy_imports_in_module()``,
+``importlib.eager_imports()`` context manager, and excluded modules in the
+``importlib.set_lazy_imports(excluding=...)`` override all have shallow
 effects: they only force eagerness for the location they are applied to, not
 transitively. It would be possible (although not simple) to provide a
 deep/transitive version of one or both. That idea is rejected in this PEP
