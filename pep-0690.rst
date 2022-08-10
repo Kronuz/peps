@@ -357,6 +357,16 @@ class or function bodies is handled in the compiler via a new
 ``IMPORT_NAME``, which may be lazy or eager depending on ``-L`` and/or
 ``importlib.set_lazy_imports()``.
 
+The current status of lazy imports at any given place is determined by a
+combination of the passed ``-L`` option flag; an interpreter-wide flag set by
+``importlib.set_lazy_imports()`` and the container object passed in its
+``excluding`` keyword argument; and a flag set by
+``importlib.enable_lazy_imports_in_module()`` in nearest running module frame.
+All these together are used to cache the current status of lazy imports in the
+currently running frame, this cache is globally busted whenever any of these API
+functions is called and, as such, changes are immediate for all new import
+statements.
+
 
 Exceptions and Deferred Exceptions
 ----------------------------------
