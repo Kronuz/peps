@@ -438,17 +438,19 @@ imports will be eager::
 The effect of this is also shallow: all imports within ``one.mod`` will be
 eager, but not imports in all modules imported by ``one.mod``.
 
-The ``excluding`` parameter of ``set_lazy_imports()`` can also be set to a
-callback which receives a module name and returns whether imports within this
-module should be eager::
+The ``excluding`` parameter of ``set_lazy_imports()`` can be a container of any
+type that will be checked to see whether it contains a module name or not. If
+the module name is contained in the object, it should be eager. Thus, another
+example use case for this argument could be::
 
     import re
     from importlib import set_lazy_imports
 
-    def eager_imports(name):
-        return re.match(r"foo\.[^.]+\.logger", name)
+    class Checker:
+        def __contains__(self, name):
+            return re.match(r"foo\.[^.]+\.logger", name)
 
-    set_lazy_imports(excluding=eager_imports)
+    set_lazy_imports(excluding=Checker())
 
 If Python was executed with the ``-L`` flag, then lazy imports will already be
 globally enabled, and the only effect of calling ``set_lazy_imports()`` will be
