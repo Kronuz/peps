@@ -148,6 +148,10 @@ from to new Python subprocesses by using ``sys.flags.lazy_imports``, so in an
 analogous way, new subprocesses don't necessarily reflect the current status of
 lazy imports at the time the subprocess was spawned either.
 
+Actual current status of whether lazy imports is enabled or not at any moment
+can be retrieved using ``importlib.is_lazy_imports_enabled()``, which will
+return ``True`` if lazy imports is enabled or ``False`` otherwise.
+
 When enabled, the loading and execution of all (and only) top-level imports is
 deferred until the imported name is first used. This could happen immediately
 (e.g.  on the very next line after the import statement) or much later (e.g.
@@ -520,11 +524,25 @@ enabled.
 C API
 -----
 
-For authors of C extension modules, the proposed
-``importlib.set_lazy_imports()`` function will also be exposed in the stable C
-API as ``PyImport_SetLazyImports(PyObject *names_or_callback_or_null)``, and
-``importlib.is_lazy_import`` will be available as ``PyDict_IsLazyImport(PyObject
-*dict, PyObject *key)``.
+For authors of C extension modules, the proposed stable C API is as follows:
+
+* ``importlib.set_lazy_imports()`` is available as
+  ``PyImport_SetLazyImports(PyObject *names_or_callback_or_null)``.
+
+* ``importlib.is_lazy_import`` is available as
+  ``PyDict_IsLazyImport(PyObject *dict, PyObject *key)``.
+
+* ``importlib.is_lazy_imports_enabled()`` is available as
+  ``PyImport_IsLazyImportsEnabled()``.
+
+* ``PyDict_ResolveLazyImports(PyObject *dict)`` resolves all lazy objects in a
+  dictionary, if any. To be used prior calling ``PyDict_NextWithError()`` or
+  ``PyDict_Next()``.
+
+* ``PyDict_NextWithError()``, which works the same way as ``PyDict_Next()`` with
+  the exception it propagates any errors to the caller by returning ``0`` and
+  setting an exception. Caller should use ``if (PyErr_Ocurred())`` to check for
+  any errors.
 
 
 Backwards Compatibility
