@@ -139,6 +139,15 @@ Lazy imports are opt-in, and they can be:
 
 * In module enabled, via ``importlib.enable_lazy_imports_in_module()``.
 
+When the flag ``-L`` is passed to the Python interpreter, a new
+``sys.flags.lazy_imports`` is set to ``True``, otherwise it exists as ``False``.
+This flag does not reflect whether the current status of lazy imports is enabled
+or disabled (as a result of using ``importlib.set_lazy_imports()`` or
+``importlib.enable_lazy_imports_in_module()``). The ``-L`` flag is propagated
+from to new Python subprocesses by using ``sys.flags.lazy_imports``, so in an
+analogous way, new subprocesses don't necessarily reflect the current status of
+lazy imports at the time the subprocess was spawned either.
+
 When enabled, the loading and execution of all (and only) top-level imports is
 deferred until the imported name is first used. This could happen immediately
 (e.g.  on the very next line after the import statement) or much later (e.g.
