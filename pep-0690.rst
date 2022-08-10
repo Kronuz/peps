@@ -329,6 +329,15 @@ overhead of resolving all lazy import objects inside a dictionary is only paid
 by those dictionaries that need it. Minimizing the overhead on normal non-lazy
 dictionaries is the sole purpose of the ``dk_lazy_imports`` flag.
 
+Given the fact that ``PyDict_Next`` could attempt to resolve all lazy import
+objects the first time position ``0`` is being accessed, imported objects could
+fail with exceptions. In the cases where objects can't be resolved,
+``PyDict_Next`` will return ``0`` ignoring any errors.
+
+For this reason, this PEP introduces ``PyDict_NextWithError``, that works in the
+same way as ``PyDict_Next``, but which can set an error when returning ``0`` and
+this should be checked via ``PyErr_Ocurred()`` after the call.
+
 The eagerness of imports within ``try`` / ``except`` / ``with`` blocks or within
 class or function bodies is handled in the compiler via a new
 ``EAGER_IMPORT_NAME`` opcode that always imports eagerly. Top-level imports use
