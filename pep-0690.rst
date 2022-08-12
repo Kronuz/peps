@@ -135,22 +135,19 @@ Lazy imports are opt-in, and they can be:
 
 * Globally enabled, either via a new ``-L`` flag to the Python interpreter or
   via a call to a new ``importlib.set_lazy_imports()`` function, which makes
-  *all* new imports after the call immediately lazy.
+  *all* new relevant imports after the call immediately lazy.
 
-* In module enabled, via ``importlib.enable_lazy_imports_in_module()``.
+* Enabled in a specific module, via ``importlib.enable_lazy_imports_in_module()``.
 
 When the flag ``-L`` is passed to the Python interpreter, a new
 ``sys.flags.lazy_imports`` is set to ``True``, otherwise it exists as ``False``.
-This flag does not reflect whether the current status of lazy imports is enabled
-or disabled (as a result of using ``importlib.set_lazy_imports()`` or
-``importlib.enable_lazy_imports_in_module()``). The ``-L`` flag is propagated
-from to new Python subprocesses by using ``sys.flags.lazy_imports``, so in an
-analogous way, new subprocesses don't necessarily reflect the current status of
-lazy imports at the time the subprocess was spawned either.
+This flag is used to propagate ``-L`` to new Python subprocesses.
 
-Actual current status of whether lazy imports is enabled or not at any moment
-can be retrieved using ``importlib.is_lazy_imports_enabled()``, which will
-return ``True`` if lazy imports is enabled or ``False`` otherwise.
+The flag in ``sys.flags.lazy_imports``, not necessarily reflects the current
+status of lazy imports, only whether the interpreter was started with the ``-L``
+option. Actual current status of whether lazy imports is enabled or not at any
+moment can be retrieved using ``importlib.is_lazy_imports_enabled()``, which
+will return ``True`` if lazy imports is enabled or ``False`` otherwise.
 
 When enabled, the loading and execution of all (and only) top-level imports is
 deferred until the imported name is first used. This could happen immediately
@@ -449,7 +446,7 @@ rules.
 
 The more difficult case can occur if an import in third-party code that can't
 easily be modified must be forced to be eager. For this purpose,
-``importlib.set_lazy_imports()`` takes two optional argument: a boolean, `True`
+``importlib.set_lazy_imports()`` takes two optional argument: a boolean, ``True``
 by default, for enabling or disabling lazy imports, and an optional keyword-only
 ``excluding`` argument, which can be set to a container of module names within
 which all imports will be eager::
