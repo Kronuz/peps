@@ -346,7 +346,7 @@ fail with exceptions. In the cases where objects can't be resolved,
 
 For this reason, this PEP introduces ``PyDict_NextWithError``, that works in the
 same way as ``PyDict_Next``, but which can set an error when returning ``0`` and
-this should be checked via ``PyErr_Ocurred()`` after the call.
+this should be checked via ``PyErr_Occurred()`` after the call.
 
 The eagerness of imports within ``try`` / ``except`` / ``with`` blocks or within
 class or function bodies is handled in the compiler via a new
