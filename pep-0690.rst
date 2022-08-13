@@ -731,9 +731,8 @@ accidentally caught and mistaken for a different expected exception. However,
 in practice we have seen cases, e.g. inside tests, where failing modules raise
 ``unittest.SkipTest`` exception and this would too end up being wrapped in
 ``LazyImportError``, making such tests fail because true exception types are
-being magically hidden, debunking the hypothetically likely case where
-unexpected deferred exceptions are caught by mistake as expected exceptions in
-exception handlers.
+being magically hidden. The drawbacks here seem to outweigh the hypothetical case where
+unexpected deferred exceptions are caught by mistake.
 
 
 Per-module opt-in using future imports
