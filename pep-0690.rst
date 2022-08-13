@@ -143,7 +143,7 @@ When the flag ``-L`` is passed to the Python interpreter, a new
 ``sys.flags.lazy_imports`` is set to ``True``, otherwise it exists as ``False``.
 This flag is used to propagate ``-L`` to new Python subprocesses.
 
-The flag in ``sys.flags.lazy_imports``, not necessarily reflects the current
+The flag in ``sys.flags.lazy_imports`` does not necessarily reflect the current
 status of lazy imports, only whether the interpreter was started with the ``-L``
 option. Actual current status of whether lazy imports is enabled or not at any
 moment can be retrieved using ``importlib.is_lazy_imports_enabled()``, which
