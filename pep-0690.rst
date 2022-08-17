@@ -739,13 +739,13 @@ Per-module opt-in using future imports
 --------------------------------------
 
 A per-module opt-in using future imports (i.e.
-``from __future__ import lazy_imports`` does not make sense because
+``from __future__ import lazy_imports``) does not make sense because
 ``__future__`` imports are not feature flags, they are for transition to
-  behaviors which will become default in the future. It is not clear if lazy
-  imports will ever make sense as the default behavior, so we should not
-  promise this with a ``__future__`` import. Thus, a per-module opt-in would
-  require a new ``from __optional_features__ import lazy_imports`` or similar
-  mechanism.
+behaviors which will become default in the future. It is not clear if lazy
+imports will ever make sense as the default behavior, so we should not
+promise this with a ``__future__`` import. Thus, a per-module opt-in would
+require a new ``from __optional_features__ import lazy_imports`` or similar
+mechanism.
 
 
 Explicit syntax for individual lazy imports
