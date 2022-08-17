@@ -115,12 +115,16 @@ directly out of a module ``__dict__``, the only way to reliably prevent
 accidental leakage of lazy objects is to have the dictionary itself be
 responsible to ensure resolution of lazy objects on lookup.
 
-To avoid a performance penalty on the vast majority of dictionaries which never
-contain any lazy objects, we set a specialized lookup kind (`DictKeysKind
-<https://github.com/python/cpython/blob/3.11/Include/internal/pycore_dict.h#L80>`_)
-for module namespace dictionaries when they first gain a lazy-object value. When
-a lazy lookup kind is set and lookup finds that the key references a lazy
-object, it resolves the lazy object immediately before returning it.
+When a lookup finds that the key references a lazy object, it resolves the lazy
+object immediately before returning it. To avoid having side effects mutating
+dictionaries midway an iteration, all lazy objects in a dictionary are resolved
+prior starting an iteration; this could incur a performance penalty when using
+bulk iterations (``iter(dict)``, ``reversed(dict)``, ``dict.__reversed__()``,
+``dict.keys()``, ``iter(dict.keys())`` and ``reversed(dict.keys())``). To avoid
+this performance penalty on the vast majority of dictionaries, which never
+contain any lazy objects, we steal a bit from the ``dk_kind`` field
+(`dk_lazy_imports` <https://github.com/python/cpython/blob/3.11/Include/internal/pycore_dict.h#L105>`_),
+and keep track of whether a dictionary may contain lazy objects or not.
 
 This implementation comprehensively prevents leakage of lazy objects, ensuring
 they are always resolved to the real imported object before anyone can get hold
@@ -289,8 +293,13 @@ dictionary may contain lazy import objects.
 Anytime a key is looked up in a dictionary to extract its value, the
 value is checked to see if it is a lazy import object. If so, the lazy object is
 immediately resolved, the relevant imported modules executed, the lazy import
-object is replaced in the dictionary (whenever is possible) by the actual
-imported value, and the resolved value is returned from the lookup function.
+object is replaced in the dictionary (if possible) by the actual imported value,
+and such resolved value is returned from the lookup function. A dictionary could
+mutate as part of an import side effect while resolving a lazy import object.
+In this case it is not possible to efficiently replace the key value with the
+resolved object. For this, the lazy import object contains a cached pointer to
+the resolved object, to be returned immediately upon next access and the attempt
+to replace the lazy import object with the resolved value will be re-tried.
 
 Because this is all handled internally by the dictionary implementation, lazy
 import objects can never escape from the module namespace to become visible to
@@ -339,10 +348,11 @@ overhead of resolving all lazy import objects inside a dictionary is only paid
 by those dictionaries that need it. Minimizing the overhead on normal non-lazy
 dictionaries is the sole purpose of the ``dk_lazy_imports`` flag.
 
-Given the fact that ``PyDict_Next`` could attempt to resolve all lazy import
-objects the first time position ``0`` is being accessed, imported objects could
-fail with exceptions. In the cases where objects can't be resolved,
-``PyDict_Next`` will return ``0`` ignoring any errors.
+``PyDict_Next`` will attempt to resolve all lazy import objects the first time
+position ``0`` is accessed, and those imports could fail with exceptions. Since
+``PyDict_Next`` cannot set an exception, ``PyDict_Next`` will return ``0``
+immediately in this case, and any exception will be printed to stderr as an
+unraisable exception.
 
 For this reason, this PEP introduces ``PyDict_NextWithError``, that works in the
 same way as ``PyDict_Next``, but which can set an error when returning ``0`` and
@@ -363,26 +373,6 @@ All these together are used to cache the current status of lazy imports in the
 currently running frame, this cache is globally busted whenever any of these API
 functions is called and, as such, changes are immediate for all new import
 statements.
-
-
-Exceptions and Deferred Exceptions
-----------------------------------
-
-Exceptions that occur during a lazy import bubble up and erase the
-partially-constructed module(s) from ``sys.modules``, just as exceptions during
-normal import do.
-
-Since errors raised during a lazy import will occur later (wherever the imported
-name is first referenced) than they would if the import were eager, it is
-also possible that they could be accidentally caught by exception handlers that
-didn't expect the import to be running within their ``try`` block, leading to
-confusion.
-
-Care should be taken when debugging unexpected exceptions keeping in mind any
-and all exceptions arising from import (including ``ModuleNotFoundError``) are
-deferred from import time to first-use time, which could complicate debugging.
-Referencing a name in the middle of any code could trigger a deferred import and
-produce an exception while loading and executing the related imported module.
 
 
 Debugging
@@ -534,18 +524,19 @@ C API
 
 For authors of C extension modules, the proposed public C API is as follows:
 
-* ``importlib.set_lazy_imports(enabled: bool = True, excluding: typing.Container[str] | None = None)`` is available as
+* ``importlib.set_lazy_imports(enabled: bool = True, excluding: typing.Container[str] | None = None)``
+  is available as
   ``PyObject *PyImport_SetLazyImports(PyObject *enabled, PyObject *excluding)``.
 
-* ``importlib.is_lazy_import(dict: typing.Dict[str, object], name: str) -> bool`` is available as
-  ``int PyDict_IsLazyImport(PyObject *dict, PyObject *name)``.
+* ``importlib.is_lazy_import(dict: typing.Dict[str, object], name: str) -> bool``
+  is available as ``int PyDict_IsLazyImport(PyObject *dict, PyObject *name)``.
 
 * ``importlib.is_lazy_imports_enabled() -> bool`` is available as
   ``int PyImport_IsLazyImportsEnabled()``.
 
-* ``void PyDict_ResolveLazyImports(PyObject *dict)`` resolves all lazy objects in a
-  dictionary, if any. To be used prior calling ``PyDict_NextWithError()`` or
-  ``PyDict_Next()``.
+* ``void PyDict_ResolveLazyImports(PyObject *dict)`` resolves all lazy objects
+  in a dictionary, if any. To be used prior calling ``PyDict_NextWithError()``
+  or ``PyDict_Next()``.
 
 * ``PyDict_NextWithError()``, which works the same way as ``PyDict_Next()`` with
   the exception it propagates any errors to the caller by returning ``0`` and
@@ -611,6 +602,20 @@ place the ``sys.path`` modifications in a context manager. This resolves the
 issue, since imports inside a ``with`` block are always eager.
 
 
+Deferred Exceptions
+-------------------
+
+Exceptions that occur during a lazy import bubble up and erase the
+partially-constructed module(s) from ``sys.modules``, just as exceptions during
+normal import do.
+
+Since errors raised during a lazy import will occur later (wherever the imported
+name is first referenced) than they would if the import were eager, it is
+also possible that they could be accidentally caught by exception handlers that
+didn't expect the import to be running within their ``try`` block, leading to
+confusion.
+
+
 Drawbacks
 =========
 
@@ -624,6 +629,9 @@ Downsides of this PEP include:
 * Some popular Python coding patterns (notably centralized registries populated
   by a decorator) rely on import side effects and may require explicit opt-out to
   work as expected with lazy imports.
+
+* Exceptions can be raised at any point while accessing names representing lazy
+  imports, this could lead to confusion and debugging of unexpected exceptions.
 
 Lazy import semantics are already possible and even supported today in the
 Python standard library, so these drawbacks are not newly introduced by this
