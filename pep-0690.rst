@@ -297,9 +297,9 @@ object is replaced in the dictionary (if possible) by the actual imported value,
 and the resolved value is returned from the lookup function. A dictionary could
 mutate as part of an import side effect while resolving a lazy import object.
 In this case it is not possible to efficiently replace the key value with the
-resolved object. For this, the lazy import object contains a cached pointer to
-the resolved object, to be returned immediately upon next access and the attempt
-to replace the lazy import object with the resolved value will be re-tried.
+resolved object. In this case, the lazy import object will gain a cached pointer to
+the resolved object. On next access that cached reference will be returned and
+the lazy import object will be replaced in the dict with the resolved value.
 
 Because this is all handled internally by the dictionary implementation, lazy
 import objects can never escape from the module namespace to become visible to
