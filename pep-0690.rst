@@ -123,7 +123,7 @@ bulk iterations (``iter(dict)``, ``reversed(dict)``, ``dict.__reversed__()``,
 ``dict.keys()``, ``iter(dict.keys())`` and ``reversed(dict.keys())``). To avoid
 this performance penalty on the vast majority of dictionaries, which never
 contain any lazy objects, we steal a bit from the ``dk_kind`` field
-(`dk_lazy_imports` <https://github.com/python/cpython/blob/3.11/Include/internal/pycore_dict.h#L105>`_),
+for a new `dk_lazy_imports` bitfield```
 and keep track of whether a dictionary may contain lazy objects or not.
 
 This implementation comprehensively prevents leakage of lazy objects, ensuring
