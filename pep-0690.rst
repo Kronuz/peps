@@ -117,14 +117,14 @@ responsible to ensure resolution of lazy objects on lookup.
 
 When a lookup finds that the key references a lazy object, it resolves the lazy
 object immediately before returning it. To avoid side effects mutating
-dictionaries midway through iteration, all lazy objects in a dictionary are resolved
-prior to starting an iteration; this could incur a performance penalty when using
-bulk iterations (``iter(dict)``, ``reversed(dict)``, ``dict.__reversed__()``,
-``dict.keys()``, ``iter(dict.keys())`` and ``reversed(dict.keys())``). To avoid
-this performance penalty on the vast majority of dictionaries, which never
-contain any lazy objects, we steal a bit from the ``dk_kind`` field
-for a new `dk_lazy_imports` bitfield```
-and keep track of whether a dictionary may contain lazy objects or not.
+dictionaries midway through iteration, all lazy objects in a dictionary are
+resolved prior to starting an iteration; this could incur a performance penalty
+when using bulk iterations (``iter(dict)``, ``reversed(dict)``,
+``dict.__reversed__()``, ``dict.keys()``, ``iter(dict.keys())`` and
+``reversed(dict.keys())``). To avoid this performance penalty on the vast
+majority of dictionaries, which never contain any lazy objects, we steal a bit
+from the ``dk_kind`` field for a new ``dk_lazy_imports`` bitfield to keep track
+of whether a dictionary may contain lazy objects or not.
 
 This implementation comprehensively prevents leakage of lazy objects, ensuring
 they are always resolved to the real imported object before anyone can get hold
@@ -155,12 +155,12 @@ will return ``True`` if lazy imports is enabled or ``False`` otherwise.
 
 When enabled, the loading and execution of all (and only) top-level imports is
 deferred until the imported name is first used. This could happen immediately
-(e.g.  on the very next line after the import statement) or much later (e.g.
+(e.g. on the very next line after the import statement) or much later (e.g.
 while using the name inside a function being called by some other code at some
 later time.)
 
 For these top level imports, there are two contexts which will make them eager
-(not lazy): imports inside ``try`` / ``except`` / ``finally``  or ``with``
+(not lazy): imports inside ``try`` / ``except`` / ``finally`` or ``with``
 blocks, and star imports (``from foo import *``.) Imports inside
 exception-handling blocks (this includes ``with`` blocks, since those can also
 "catch" and handle exceptions) remain eager so that any exceptions arising from
@@ -471,7 +471,7 @@ cleared and all eligible imports (module-level imports not in
 
 ``set_lazy_imports()`` may be called more than once, with subsequent calls
 having only the effect of globally replacing or clearing the ``excluding``
-list/callback.  Generally there should be no reason to do this: the intended use
+list/callback. Generally there should be no reason to do this: the intended use
 is a single call to ``set_lazy_imports`` in the main module, early in the
 process.
 
@@ -751,7 +751,7 @@ A per-module opt-in using future imports (i.e.
 ``__future__`` imports are not feature flags, they are for transition to
 behaviors which will become default in the future. It is not clear if lazy
 imports will ever make sense as the default behavior, so we should not
-promise this with a ``__future__`` import. Thus, the proposed  per-module opt-in
+promise this with a ``__future__`` import. Thus, the proposed per-module opt-in
 uses a function call rather than dedicated syntax. Dedicated syntax would
 require a new ``from __optional_features__ import lazy_imports`` or similar
 mechanism.
@@ -845,7 +845,7 @@ Lazy dynamic imports
 
 It would be possible to add a ``lazy=True`` or similar option to
 ``__import__()`` and/or ``importlib.import_module()``, to enable them to
-perform lazy imports.  That idea is rejected in this PEP for lack of a clear
+perform lazy imports. That idea is rejected in this PEP for lack of a clear
 use case. Dynamic imports are already far outside the :pep:`8` code style
 recommendations for imports, and can easily be made precisely as lazy as
 desired by placing them at the desired point in the code flow. These aren't
