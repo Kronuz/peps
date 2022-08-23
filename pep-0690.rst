@@ -294,7 +294,7 @@ Anytime a key is looked up in a dictionary to extract its value, the
 value is checked to see if it is a lazy import object. If so, the lazy object is
 immediately resolved, the relevant imported modules executed, the lazy import
 object is replaced in the dictionary (if possible) by the actual imported value,
-and such resolved value is returned from the lookup function. A dictionary could
+and the resolved value is returned from the lookup function. A dictionary could
 mutate as part of an import side effect while resolving a lazy import object.
 In this case it is not possible to efficiently replace the key value with the
 resolved object. For this, the lazy import object contains a cached pointer to
