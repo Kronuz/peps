@@ -336,8 +336,8 @@ There are two cases in which a lazy import object can "escape" one dictionary:
 
 * Through the garbage collector: lazy imported objects are still Python objects
   and live within the garbage collector; as such, they can be collected and seen
-  by means of using ``gc.collect()`` and ``gc.get_objects()``. Lazy objects are,
-  however, self contained and should pose no danger if extracted from the
+  by means of using ``gc.collect()`` and ``gc.get_objects()``. Lazy objects are
+  not useful but they are also harmless and pose no danger if extracted from the
   garbage collector in this way.
 
 Other "bulk" dictionary lookup methods involving values (such as ``dict.items()``,
