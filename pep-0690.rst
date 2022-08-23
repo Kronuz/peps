@@ -524,7 +524,7 @@ C API
 
 For authors of C extension modules, the proposed public C API is as follows:
 
-* ``importlib.set_lazy_imports(enabled: bool = True, excluding: typing.Container[str] | None = None)``
+* ``importlib.set_lazy_imports(enabled: bool = True, *, excluding: typing.Container[str] | None = None)``
   is available as
   ``PyObject *PyImport_SetLazyImports(PyObject *enabled, PyObject *excluding)``.
 
