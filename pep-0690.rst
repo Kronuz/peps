@@ -491,7 +491,7 @@ needed.
 
 It is less practical to achieve robust and significant startup-time or
 memory-use wins by piecemeal application of lazy imports. Generally it would
-require blanket application of the ``__future__`` import to most of the
+require blanket application of the per-module opt-in to most of the
 codebase, as well as to third-party dependencies (which may be hard or
 impossible.)
 
