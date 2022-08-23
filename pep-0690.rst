@@ -370,8 +370,8 @@ combination of the passed ``-L`` option flag; an interpreter-wide flag set by
 ``excluding`` keyword argument; and a flag set by
 ``importlib.enable_lazy_imports_in_module()`` in nearest running module frame.
 All these together are used to cache the current status of lazy imports in the
-currently running frame, this cache is globally busted whenever any of these API
-functions is called and, as such, changes are immediate for all new import
+currently running frame. This cache is globally busted whenever any of these API
+functions is called so that changes take effect immediately for all new import
 statements.
 
 
