@@ -506,9 +506,10 @@ After calling ``enable_lazy_imports_in_module()``, every import in the module
 would be lazy. This could be very helpful for libraries importing subpackages
 into their main namespace by default, as a mean of exporting them without
 suffering from the penalties and slowdowns of actually doing the import. This
-would be very helpful to allow exposing symbols for interactive exploration and
-teaching purposes, allowing making all the subpackages available there from the
-start without any additional cost.
+was one of the motivating reasons behind SPEC-1, used by Scientific Python
+libraries, where exposing symbols for interactive exploration and teaching
+purposes allows making all the subpackages available there from the start
+without the additional cost of actually doing the imports.
 
 
 Testing
@@ -739,8 +740,8 @@ accidentally caught and mistaken for a different expected exception. However,
 in practice we have seen cases, e.g. inside tests, where failing modules raise
 ``unittest.SkipTest`` exception and this would too end up being wrapped in
 ``LazyImportError``, making such tests fail because true exception types are
-being magically hidden. The drawbacks here seem to outweigh the hypothetical case where
-unexpected deferred exceptions are caught by mistake.
+being magically hidden. The drawbacks here seem to outweigh the hypothetical
+case where unexpected deferred exceptions are caught by mistake.
 
 
 Per-module opt-in using future imports
