@@ -717,8 +717,8 @@ is in use within Meta and has proven to achieve improvements in startup time
 significant reduction in memory footprint (up to 40%), thanks to not needing to
 execute imports that end up being unused in the common flow.
 
-An updated reference implementation based on CPython main branch is in progress
-and will be linked here soon. (TODO link.)
+An updated reference implementation based on CPython main branch is available
+in the `GitHub Pull Request <https://github.com/Kronuz/cpython/pull/17>`_.
 
 
 Rejected Ideas
